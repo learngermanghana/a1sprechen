@@ -48,7 +48,7 @@ teil2_prompts = [
     ("Bücher", "Krimi"), ("Arzt", "Krankenschwester"), ("Geburtstag", "Kuchen"), ("Hobby", "Malen"),
     ("Einkaufen", "Bäckerei"), ("Computer", "Bildschirm"), ("Telefon", "Anruf"), ("Getränk", "Tee"),
     ("Sport", "Basketball"), ("Haus", "Garten"),
-    # Your new Thema + Wort pairs:
+    # Your requested Thema + Wort pairs:
     ("Zeit", "Uhr"), ("Adresse", "Goethe Straße"), ("Stadt", "Stade"), ("Haus", "schließen")
 ]
 
@@ -76,7 +76,7 @@ teil3_prompts = [
     "Bitten Sie um Hilfe beim Tragen von Kisten."
 ]
 
-# Teil 1 follow-up question pool
+# Teil 1 follow-up questions
 teil1_questions = [
     ("Wie schreibt man Ihren Namen?", "teil1_q1"),
     ("Wie alt sind Sie?", "teil1_q2"),
@@ -159,57 +159,59 @@ elif teil.startswith("Teil 3"):
 # ------------------------- TEIL 1 ANALYSIS & SCORING -------------------------
 
 if teil.startswith("Teil 1"):
-    if student_intro and all(follow_up_answers.values()):
-        score = 25
-        feedback = []
+    submitted = st.button("✅ Submit Teil 1")
 
-        # Smarter keyword detection
-        keyword_checks = {
-            "name": ["heiße", "ich bin"],
-            "alter": ["jahre alt", "ich bin"],
-            "land": ["aus"],
-            "wohnort": ["wohne", "in"],
-            "sprachen": ["spreche"],
-            "beruf": ["arbeite", "lehrer", "student", "arzt", "fahrer"],
-            "hobby": ["hobby", "gern", "liebe", "mag"]
-        }
+    if submitted:
+        if student_intro and all(follow_up_answers.values()):
+            score = 25
+            feedback = []
 
-        missing = []
-        for keyword, patterns in keyword_checks.items():
-            if not any(pat in student_intro.lower() for pat in patterns):
-                missing.append(keyword)
+            keyword_checks = {
+                "name": ["heiße", "ich bin"],
+                "alter": ["jahre alt", "ich bin"],
+                "land": ["aus"],
+                "wohnort": ["wohne", "in"],
+                "sprachen": ["spreche"],
+                "beruf": ["arbeite", "lehrer", "student", "arzt", "fahrer"],
+                "hobby": ["hobby", "gern", "liebe", "mag"]
+            }
 
-        if missing:
-            feedback.append(f"❌ Missing ideas: {', '.join(missing)}")
-            score -= len(missing) * 2
+            missing = []
+            for keyword, patterns in keyword_checks.items():
+                if not any(pat in student_intro.lower() for pat in patterns):
+                    missing.append(keyword)
 
-        # Check for common grammar/spelling mistakes
-        if not re.search(r"[.!?]", student_intro):
-            feedback.append("❌ Please use punctuation marks.")
-            score -= 1
+            if missing:
+                feedback.append(f"❌ Missing ideas: {', '.join(missing)}")
+                score -= len(missing) * 2
 
-        # Capitalization check (very basic)
-        lowercase_nouns = re.findall(r' [a-z][a-z]+', student_intro)
-        if lowercase_nouns:
-            feedback.append("⚠️ Possible capitalization errors.")
-            score -= 1
+            if not re.search(r"[.!?]", student_intro):
+                feedback.append("❌ Please use punctuation marks.")
+                score -= 1
 
-        score = max(score, 5)
+            lowercase_nouns = re.findall(r' [a-z][a-z]+', student_intro)
+            if lowercase_nouns:
+                feedback.append("⚠️ Possible capitalization errors.")
+                score -= 1
 
-        st.success("✅ You completed Teil 1.")
-        st.markdown(f"**🎯 Your score: {score} / 25**")
+            score = max(score, 5)
 
-        if feedback:
-            st.error("Feedback:")
-            for item in feedback:
-                st.write(item)
+            st.success("✅ You completed Teil 1.")
+            st.markdown(f"**🎯 Your score: {score} / 25**")
+
+            if feedback:
+                st.error("Feedback:")
+                for item in feedback:
+                    st.write(item)
+            else:
+                st.success("Excellent! No major issues found.")
+
+            st.info("💡 Please record yourself reading your introduction and answers. 📤 Send your recording to your teacher via WhatsApp.")
+
+            st.session_state["teil1_score"] = score
+
         else:
-            st.success("Excellent! No major issues found.")
-
-        st.info("💡 Please record yourself reading your introduction and answers. 📤 Send your recording to your teacher via WhatsApp.")
-
-        # Save score in session_state
-        st.session_state["teil1_score"] = score
+            st.warning("Please complete your introduction and both follow-up answers before submitting.")
 
 # ------------------------- TEIL 2 SPEAKING REMINDER + NEXT BUTTON -------------------------
 
