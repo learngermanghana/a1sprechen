@@ -99,8 +99,12 @@ if teil.startswith("Teil 1"):
         missing = [word for word in keywords if word not in intro.lower()]
         if missing:
             feedback.append("Missing info: " + ", ".join(missing))
-        if not frage1.strip() or not frage2.strip() or not frage3.strip():
-            feedback.append("Please answer all three follow-up questions.")
+        if not frage1.strip():
+            feedback.append("Please answer: Wie alt ist Ihre Mutter?")
+        if not frage2.strip():
+            feedback.append("Please answer: Wie buchstabiert man Ihren Namen?")
+        if not frage3.strip():
+            feedback.append("Please answer: Wie ist Ihre Telefonnummer?")
 
         if feedback:
             for f in feedback:
@@ -108,6 +112,7 @@ if teil.startswith("Teil 1"):
         else:
             st.success("✅ Well done! Your introduction is complete.")
             st.session_state["teil1_done"] = True
+
 
 # ---------- Teil 2 ----------
 elif teil.startswith("Teil 2"):
@@ -117,10 +122,19 @@ elif teil.startswith("Teil 2"):
 
     remaining = [p for p in teil2_prompts if p not in st.session_state["teil2_done"]]
 
+    if not remaining:
+        st.success("🎉 You have completed all available Thema + Wort in Teil 2! Excellent job. You can review or start Teil 3 now.")
+        st.stop()
+
     if not st.session_state["teil2_today"]:
         max_today = len(remaining)
-        st.info("How many questions would you like to practice today? Minimum 5.")
-        num_today = st.number_input("Number of Thema to practice today:", min_value=5, max_value=max_today if max_today >= 5 else max_today, step=1)
+        st.info("How many questions would you like to practice today? Minimum 1.")
+        num_today = st.number_input(
+            "Number of Thema to practice today:",
+            min_value=1,
+            max_value=max_today if max_today >= 1 else max_today,
+            step=1
+        )
 
         if st.button("🎯 Start Today’s Practice"):
             st.session_state["teil2_today"] = random.sample(remaining, min(num_today, len(remaining)))
@@ -135,9 +149,13 @@ elif teil.startswith("Teil 2"):
             thema, wort = batch[index]
             st.info(f"📝 Thema: {thema} | Wort: {wort}")
 
-            st.warning("👉 Please type both your **question** and **answer** in the box below. End your question with a **?** and your answer with a **.**")
+            st.warning("👉 Please type both your **question** and **answer**. End your question with a **?** and your answer with a **.**")
 
-            text = st.text_area("💬 Your question + answer:", key=f"qa_{index}", placeholder="Example: Wo wohnen Sie? Ich wohne in Accra.")
+            text = st.text_area(
+                "💬 Your question + answer:",
+                key=f"qa_{index}",
+                placeholder="Example: Wo wohnen Sie? Ich wohne in Accra."
+            )
 
             if st.button("✅ Submit"):
                 feedback = []
@@ -209,6 +227,18 @@ elif teil.startswith("Teil 2"):
 
     st.progress(done / total)
 
+    # --- Download button for Teil 2 progress ---
+    if st.session_state["teil2_done"]:
+        teil2_text = "Your Teil 2 completed questions:\n\n"
+        for thema, wort in st.session_state["teil2_done"]:
+            teil2_text += f"Thema: {thema} | Wort: {wort}\n"
+
+        st.download_button(
+            "📥 Download Teil 2 Progress",
+            teil2_text,
+            file_name=f"{student_name}_Teil2_progress.txt"
+        )
+
 # ---------- Teil 3 ----------
 elif teil.startswith("Teil 3"):
     total = len(teil3_prompts)
@@ -217,10 +247,19 @@ elif teil.startswith("Teil 3"):
 
     remaining = [s for s in teil3_prompts if s not in st.session_state["teil3_done"]]
 
+    if not remaining:
+        st.success("🎉 You have completed all available situations in Teil 3! Well done. You can review Teil 1 or Teil 2 again anytime.")
+        st.stop()
+
     if not st.session_state["teil3_today"]:
         max_today = len(remaining)
-        st.info("How many situations would you like to practice today? Minimum 5.")
-        num_today = st.number_input("Number of situations to practice today:", min_value=5, max_value=max_today if max_today >= 5 else max_today, step=1)
+        st.info("How many situations would you like to practice today? Minimum 1.")
+        num_today = st.number_input(
+            "Number of situations to practice today:",
+            min_value=1,
+            max_value=max_today if max_today >= 1 else max_today,
+            step=1
+        )
 
         if st.button("🎯 Start Today’s Practice"):
             st.session_state["teil3_today"] = random.sample(remaining, min(num_today, len(remaining)))
@@ -235,9 +274,13 @@ elif teil.startswith("Teil 3"):
             situation = batch[index]
             st.info(f"📝 Situation: {situation}")
 
-            st.warning("👉 Please type both your **request** and **response** in the box below. End your request with a **?** and your response with a **.**")
+            st.warning("👉 Please type both your **request** and **response**. End your request with a **?** and your response with a **.**")
 
-            text = st.text_area("💬 Your request + response:", key=f"bitteantwort_{index}", placeholder="Example: Können Sie mir bitte helfen? Ja, gerne.")
+            text = st.text_area(
+                "💬 Your request + response:",
+                key=f"bitteantwort_{index}",
+                placeholder="Example: Können Sie mir bitte helfen? Ja, gerne."
+            )
 
             if st.button("✅ Submit"):
                 feedback = []
@@ -252,7 +295,8 @@ elif teil.startswith("Teil 3"):
                     if not any(w in bitte_part for w in ["können", "könnten", "bitte", "öffnen sie", "machen sie"]):
                         feedback.append("Your request should include 'können', 'könnten', 'bitte' or a Sie-form imperative.")
 
-                    if not any(p in antwort_part for p in ["ja", "kein problem", "gerne", "natürlich", "viele grüße", "liebe grüße", "mit freundlichen grüßen"]):
+                    polite_responses = ["ja", "kein problem", "gerne", "natürlich"]
+                    if not any(p in antwort_part for p in polite_responses):
                         feedback.append("Your response should be polite (e.g., 'Ja, gerne').")
 
                 if feedback:
@@ -286,3 +330,30 @@ elif teil.startswith("Teil 3"):
                     st.session_state["teil3_index"] = 0
 
     st.progress(done / total)
+
+    # --- Download button for Teil 3 progress ---
+    if st.session_state["teil3_done"]:
+        teil3_text = "Your Teil 3 completed situations:\n\n"
+        for situation in st.session_state["teil3_done"]:
+            teil3_text += f"{situation}\n"
+
+        st.download_button(
+            "📥 Download Teil 3 Progress",
+            teil3_text,
+            file_name=f"{student_name}_Teil3_progress.txt"
+        )
+
+# ---------- Reset Progress ----------
+st.divider()
+st.info("If you want to start over, you can reset your progress below.")
+
+if st.button("♻ Reset All Progress"):
+    for key in [
+        "teil2_done", "teil3_done", "teil1_done",
+        "teil2_today", "teil3_today",
+        "teil2_index", "teil3_index",
+        "submitted_valid"
+    ]:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.success("Progress has been reset. Please reload the page to start again.")
