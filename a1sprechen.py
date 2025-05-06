@@ -1,58 +1,63 @@
 import streamlit as st
 import random
-import re
 
 st.set_page_config(
-    page_title="A1 Sprechen Chat Trainer",
+    page_title="A1 Sprechen Trainer",
     page_icon="🗣️",
     layout="centered"
 )
 
-st.title("🗣️ Goethe A1 Sprechen Chat Trainer")
+st.title("🗣️ Goethe A1 Sprechen Trainer")
 st.subheader("By Learn Language Education Academy")
 
-st.markdown("""
-Welcome to your A1 Sprechen training app! 
-Please type your answers and **record yourself speaking**. 
-Then send your recording to your teacher via WhatsApp for feedback.
-""")
+st.info("Please enter your name:")
+student_name = st.text_input("Your Name:")
 
-st.info("📖 For more examples and pictures, check **Chapter 15 PDF** in your Google Classroom.")
+if not student_name:
+    st.stop()
 
-# ------------------------- TEIL SELECTION -------------------------
-teil = st.selectbox(
-    "Choose the Sprechen part (Teil):",
-    ["Teil 1 – Personal Introduction", "Teil 2 – Frage & Antwort", "Teil 3 – Bitte / Request"]
+st.success(f"Hello {student_name}! Good luck with your practice.")
+
+st.warning("⚠️ Your progress is saved on this device. If you don’t clear cookies and continue using this device, your progress will stay saved.")
+
+# ---------- Session state initialization ----------
+if "teil2_done" not in st.session_state:
+    st.session_state["teil2_done"] = []
+if "teil3_done" not in st.session_state:
+    st.session_state["teil3_done"] = []
+if "teil1_done" not in st.session_state:
+    st.session_state["teil1_done"] = False
+if "teil2_today" not in st.session_state:
+    st.session_state["teil2_today"] = []
+if "teil3_today" not in st.session_state:
+    st.session_state["teil3_today"] = []
+if "teil2_index" not in st.session_state:
+    st.session_state["teil2_index"] = 0
+if "teil3_index" not in st.session_state:
+    st.session_state["teil3_index"] = 0
+if "submitted_valid" not in st.session_state:
+    st.session_state["submitted_valid"] = False
+
+teil = st.radio(
+    "Which part would you like to practice?",
+    ["Teil 1 – Personal Introduction", "Teil 2 – Question & Answer", "Teil 3 – Request & Response"]
 )
 
-# ------------------------- DAILY TASK INFO -------------------------
-if teil.startswith("Teil 2"):
-    st.warning("Today: Complete 10 Thema + Wort pairs. You have 5 days to finish all 50.")
-elif teil.startswith("Teil 3"):
-    st.warning("Today: Complete 10 situations. You have 2 days to finish all 20.")
-
-# ------------------------- PROMPT LISTS -------------------------
-
-# Teil 2: 50 Thema + Wort
+# ---------- Prompts ----------
 teil2_prompts = [
     ("Familie", "Bruder"), ("Essen", "Pizza"), ("Freizeit", "Schwimmen"), ("Wohnung", "Balkon"),
-    ("Beruf", "Lehrer"), ("Reisen", "Hotel"), ("Sport", "Fußball"), ("Haustier", "Hund"),
-    ("Stadt", "Park"), ("Kleidung", "Jacke"), ("Auto", "Fahrer"), ("Musik", "Gitarre"),
-    ("Film", "Komödie"), ("Schule", "Lehrer"), ("Bücher", "Roman"), ("Arbeit", "Kollege"),
-    ("Urlaub", "Strand"), ("Gesundheit", "Arzt"), ("Geburtstag", "Geschenk"), ("Hobby", "Lesen"),
-    ("Einkaufen", "Supermarkt"), ("Computer", "Laptop"), ("Telefon", "Handy"), ("Essen", "Salat"),
-    ("Getränk", "Wasser"), ("Sport", "Tennis"), ("Haus", "Küche"), ("Stadt", "Brücke"),
-    ("Reise", "Flughafen"), ("Familie", "Schwester"), ("Auto", "Benzin"), ("Film", "Drama"),
-    ("Schule", "Schüler"), ("Arbeit", "Chef"), ("Freizeit", "Kino"), ("Wohnung", "Fenster"),
-    ("Beruf", "Ingenieur"), ("Haustier", "Katze"), ("Stadt", "Bibliothek"), ("Musik", "Klavier"),
-    ("Bücher", "Krimi"), ("Arzt", "Krankenschwester"), ("Geburtstag", "Kuchen"), ("Hobby", "Malen"),
-    ("Einkaufen", "Bäckerei"), ("Computer", "Bildschirm"), ("Telefon", "Anruf"), ("Getränk", "Tee"),
-    ("Sport", "Basketball"), ("Haus", "Garten"),
-    # Your requested Thema + Wort pairs:
-    ("Zeit", "Uhr"), ("Adresse", "Goethe Straße"), ("Stadt", "Stade"), ("Haus", "schließen")
+    ("Beruf", "Lehrer"), ("Reisen", "Hotel"), ("Sport", "Fußball"), ("Haustier", "Hund"), ("Stadt", "Park"),
+    ("Kleidung", "Jacke"), ("Auto", "Fahrer"), ("Musik", "Gitarre"), ("Film", "Komödie"), ("Schule", "Lehrer"),
+    ("Bücher", "Roman"), ("Arbeit", "Kollege"), ("Urlaub", "Strand"), ("Gesundheit", "Arzt"), ("Geburtstag", "Geschenk"),
+    ("Hobby", "Lesen"), ("Einkaufen", "Supermarkt"), ("Computer", "Laptop"), ("Telefon", "Handy"), ("Essen", "Salat"),
+    ("Getränk", "Wasser"), ("Sport", "Tennis"), ("Haus", "Küche"), ("Stadt", "Brücke"), ("Reise", "Flughafen"),
+    ("Familie", "Schwester"), ("Auto", "Benzin"), ("Film", "Drama"), ("Schule", "Schüler"), ("Arbeit", "Chef"),
+    ("Freizeit", "Kino"), ("Wohnung", "Fenster"), ("Beruf", "Ingenieur"), ("Haustier", "Katze"),
+    ("Stadt", "Bibliothek"), ("Musik", "Klavier"), ("Bücher", "Krimi"), ("Arzt", "Krankenschwester"),
+    ("Geburtstag", "Kuchen"), ("Hobby", "Malen"), ("Einkaufen", "Bäckerei"), ("Computer", "Bildschirm"),
+    ("Telefon", "Anruf"), ("Getränk", "Tee"), ("Sport", "Basketball"), ("Haus", "Garten")
 ]
 
-# Teil 3: 20 Situationen
 teil3_prompts = [
     "Bitten Sie um Hilfe beim Tragen einer Tasche.",
     "Bitten Sie jemanden, das Fenster zu öffnen.",
@@ -76,165 +81,208 @@ teil3_prompts = [
     "Bitten Sie um Hilfe beim Tragen von Kisten."
 ]
 
-# Teil 1 follow-up questions
-teil1_questions = [
-    ("Wie schreibt man Ihren Namen?", "teil1_q1"),
-    ("Wie alt sind Sie?", "teil1_q2"),
-    ("Wie ist Ihre Telefonnummer?", "teil1_q3"),
-    ("Wie buchstabiert man Ihre Stadt?", "teil1_q4"),
-    ("Wie alt ist Ihre Mutter?", "teil1_q5"),
-    ("Welche Sprachen sprechen Sie?", "teil1_q6"),
-    ("Was ist Ihr Hobby?", "teil1_q7"),
-    ("Haben Sie Geschwister?", "teil1_q8")
-]
-
-# ------------------------- DAY SELECTION FOR TEIL 2 & TEIL 3 -------------------------
-
-day = None
-
-if teil.startswith("Teil 2"):
-    day = st.selectbox(
-        "Select your day (1 to 5):", ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"]
-    )
-elif teil.startswith("Teil 3"):
-    day = st.selectbox(
-        "Select your day (1 or 2):", ["Day 1", "Day 2"]
-    )
-
-# ------------------------- PROMPT FILTERING & CHAT PROMPTS -------------------------
-
+# ---------- Teil 1 ----------
 if teil.startswith("Teil 1"):
-    st.chat_message("assistant").markdown(
-        "👩‍🏫 **Examiner:** Please introduce yourself. Use these keywords: **Name, Alter, Land, Wohnort, Sprachen, Beruf, Hobby**. Write 4–6 sentences."
-    )
-    student_intro = st.text_area("💬 Your introduction:", key="teil1_intro")
+    st.info("Speak about: Name, Age, Country, City, Languages, Job, Hobby.")
+    intro = st.text_area("💬 Write your introduction:")
 
-    # ---- Randomly select 2 follow-up questions ----
-    selected_questions = random.sample(teil1_questions, 2)
+    st.write("**Please also answer these questions:**")
+    frage1 = st.text_input("Wie alt ist Ihre Mutter?")
+    frage2 = st.text_input("Wie buchstabiert man Ihren Namen?")
+    frage3 = st.text_input("Wie ist Ihre Telefonnummer?")
 
-    follow_up_answers = {}
-    for question, key in selected_questions:
-        st.chat_message("assistant").markdown(f"👩‍🏫 **Examiner:** {question}")
-        follow_up_answers[key] = st.text_input("💬 Your answer:", key=key)
+    if st.button("✅ Submit"):
+        feedback = []
+        if not any(phrase in intro.lower() for phrase in ["ich heiße", "mein name ist"]):
+            feedback.append("Your introduction should include 'Ich heiße...' or 'Mein Name ist...'.")
+        keywords = ["alt", "wohne", "komme", "spreche", "arbeite", "hobby"]
+        missing = [word for word in keywords if word not in intro.lower()]
+        if missing:
+            feedback.append("Missing info: " + ", ".join(missing))
+        if not frage1.strip() or not frage2.strip() or not frage3.strip():
+            feedback.append("Please answer all three follow-up questions.")
 
+        if feedback:
+            for f in feedback:
+                st.error(f)
+        else:
+            st.success("✅ Well done! Your introduction is complete.")
+            st.session_state["teil1_done"] = True
+
+# ---------- Teil 2 ----------
 elif teil.startswith("Teil 2"):
-    day_number = int(day.split()[1])
-    start = (day_number - 1) * 10
-    end = start + 10
-    day_prompts = teil2_prompts[start:end]
-    thema, wort = random.choice(day_prompts)
+    total = len(teil2_prompts)
+    done = len(st.session_state["teil2_done"])
+    st.info(f"Total Thema + Wort: {total}. You have completed {done}.")
 
-    st.chat_message("assistant").markdown(
-        f"👩‍🏫 **Examiner:** Thema: **{thema}** | Wort: **{wort}**.\n\nPlease write a **question** and **answer** using the keyword."
-    )
+    remaining = [p for p in teil2_prompts if p not in st.session_state["teil2_done"]]
 
-    # Clear previous answers if not already set
-    if "teil2_frage" not in st.session_state:
-        st.session_state["teil2_frage"] = ""
-    if "teil2_antwort" not in st.session_state:
-        st.session_state["teil2_antwort"] = ""
+    if not st.session_state["teil2_today"]:
+        max_today = len(remaining)
+        st.info("How many questions would you like to practice today? Minimum 5.")
+        num_today = st.number_input("Number of Thema to practice today:", min_value=5, max_value=max_today if max_today >= 5 else max_today, step=1)
 
-    frage = st.text_input("💬 Your question:", value=st.session_state["teil2_frage"], key="teil2_frage_input")
-    antwort = st.text_input("💬 Your answer:", value=st.session_state["teil2_antwort"], key="teil2_antwort_input")
+        if st.button("🎯 Start Today’s Practice"):
+            st.session_state["teil2_today"] = random.sample(remaining, min(num_today, len(remaining)))
+            st.session_state["teil2_index"] = 0
+            st.session_state["submitted_valid"] = False
 
-elif teil.startswith("Teil 3"):
-    day_number = int(day.split()[1])
-    start = (day_number - 1) * 10
-    end = start + 10
-    day_prompts = teil3_prompts[start:end]
-    situation = random.choice(day_prompts)
+    elif st.session_state["teil2_today"]:
+        index = st.session_state["teil2_index"]
+        batch = st.session_state["teil2_today"]
 
-    st.chat_message("assistant").markdown(
-        f"👩‍🏫 **Examiner:** Situation: **{situation}**.\n\nPlease write a **request (question)** and a possible **answer**."
-    )
+        if index < len(batch):
+            thema, wort = batch[index]
+            st.info(f"📝 Thema: {thema} | Wort: {wort}")
 
-    if "teil3_frage" not in st.session_state:
-        st.session_state["teil3_frage"] = ""
-    if "teil3_antwort" not in st.session_state:
-        st.session_state["teil3_antwort"] = ""
+            st.warning("👉 Please type both your **question** and **answer** in the box below. End your question with a **?** and your answer with a **.**")
 
-    frage = st.text_input("💬 Your request (question):", value=st.session_state["teil3_frage"], key="teil3_frage_input")
-    antwort = st.text_input("💬 Your answer:", value=st.session_state["teil3_antwort"], key="teil3_antwort_input")
+            text = st.text_area("💬 Your question + answer:", key=f"qa_{index}", placeholder="Example: Wo wohnen Sie? Ich wohne in Accra.")
 
-# ------------------------- TEIL 1 ANALYSIS & SCORING -------------------------
+            if st.button("✅ Submit"):
+                feedback = []
 
-if teil.startswith("Teil 1"):
-    submitted = st.button("✅ Submit Teil 1")
+                if "?" not in text or "." not in text:
+                    feedback.append("Please use a question mark (?) and a full stop (.)")
+                    st.session_state["submitted_valid"] = False
+                else:
+                    frage_part = text.split("?")[0].strip().lower()
+                    antwort_part = text.split("?")[1].strip().lower()
 
-    if submitted:
-        if student_intro and all(follow_up_answers.values()):
-            score = 25
-            feedback = []
+                    if any(w in frage_part for w in ["bist", "hast", "kannst", "wohnst", "gehst", "spielst", "du "]):
+                        feedback.append("Please use the formal 'Sie' form in your question.")
 
-            keyword_checks = {
-                "name": ["heiße", "ich bin"],
-                "alter": ["jahre alt", "ich bin"],
-                "land": ["aus"],
-                "wohnort": ["wohne", "in"],
-                "sprachen": ["spreche"],
-                "beruf": ["arbeite", "lehrer", "student", "arzt", "fahrer"],
-                "hobby": ["hobby", "gern", "liebe", "mag"]
-            }
+                    w_words = ["wann", "wo", "was", "wie", "warum", "welche"]
+                    sie_starts = [
+                        "haben sie", "ist das", "ist es", "sind sie", "gehen sie", "lesen sie", "schauen sie",
+                        "arbeiten sie", "wohnen sie", "spielen sie", "trinken sie", "essen sie", "kaufen sie",
+                        "können sie", "mögen sie", "dürfen sie", "müssen sie", "wollen sie", "sollen sie",
+                        "möchten sie", "reisen sie", "fahren sie", "sprechen sie", "machen sie", "sehen sie",
+                        "malen sie", "schwimmen sie", "zeichnen sie", "tanzen sie", "besuchen sie", "gibt es"
+                    ]
 
-            missing = []
-            for keyword, patterns in keyword_checks.items():
-                if not any(pat in student_intro.lower() for pat in patterns):
-                    missing.append(keyword)
+                    separable_starts = [
+                        "machen sie an", "machen sie auf", "machen sie aus", "machen sie zu",
+                        "steigen sie ein", "steigen sie aus", "steigen sie um", "schalten sie ein",
+                        "schalten sie aus", "sehen sie an", "schauen sie an", "anschauen sie"
+                    ]
 
-            if missing:
-                feedback.append(f"❌ Missing ideas: {', '.join(missing)}")
-                score -= len(missing) * 2
+                    if not (
+                        any(frage_part.startswith(w) for w in w_words) or
+                        any(frage_part.startswith(s) for s in sie_starts) or
+                        any(frage_part.startswith(s) for s in separable_starts)
+                    ):
+                        feedback.append("Your question should start with a W-word or a verb in Sie-form.")
 
-            if not re.search(r"[.!?]", student_intro):
-                feedback.append("❌ Please use punctuation marks.")
-                score -= 1
+                    if len(antwort_part.strip()) < 3:
+                        feedback.append("Your answer seems too short or missing.")
 
-            lowercase_nouns = re.findall(r' [a-z][a-z]+', student_intro)
-            if lowercase_nouns:
-                feedback.append("⚠️ Possible capitalization errors.")
-                score -= 1
+                if feedback:
+                    for f in feedback:
+                        st.error(f)
+                    st.session_state["submitted_valid"] = False
+                else:
+                    st.success("✅ Answer saved. Click 'Next' to continue.")
+                    st.session_state["submitted_valid"] = True
 
-            score = max(score, 5)
-
-            st.success("✅ You completed Teil 1.")
-            st.markdown(f"**🎯 Your score: {score} / 25**")
-
-            if feedback:
-                st.error("Feedback:")
-                for item in feedback:
-                    st.write(item)
-            else:
-                st.success("Excellent! No major issues found.")
-
-            st.info("💡 Please record yourself reading your introduction and answers. 📤 Send your recording to your teacher via WhatsApp.")
-
-            st.session_state["teil1_score"] = score
+            if st.button("➡ Next"):
+                if st.session_state["submitted_valid"]:
+                    if (thema, wort) not in st.session_state["teil2_done"]:
+                        st.session_state["teil2_done"].append((thema, wort))
+                    st.session_state["teil2_index"] += 1
+                    st.session_state["submitted_valid"] = False
+                else:
+                    st.warning("Please submit a valid answer before continuing.")
 
         else:
-            st.warning("Please complete your introduction and both follow-up answers before submitting.")
+            st.success(f"🎉 You completed {len(batch)} Thema today.")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔄 Start new batch"):
+                    st.session_state["teil2_today"] = []
+                    st.session_state["teil2_index"] = 0
+            with col2:
+                if st.button("✅ Finish for today"):
+                    st.success("👏 Great work today! Stay consistent and share your progress with your tutor.")
+                    st.session_state["teil2_today"] = []
+                    st.session_state["teil2_index"] = 0
 
-# ------------------------- TEIL 2 SPEAKING REMINDER + NEXT BUTTON -------------------------
+    st.progress(done / total)
 
-elif teil.startswith("Teil 2"):
-    if frage and antwort:
-        st.success("✅ Well done! You completed this Thema.")
-        st.info("💡 Please read your **question and answer aloud** and record yourself. 📤 Send your recording to your teacher via WhatsApp.")
-
-        if st.button("➡ Next Thema"):
-            st.session_state["teil2_frage"] = ""
-            st.session_state["teil2_antwort"] = ""
-            st.session_state["teil2_completed"] = st.session_state.get("teil2_completed", 0) + 1
-            st.rerun()
-
-# ------------------------- TEIL 3 SPEAKING REMINDER + NEXT BUTTON -------------------------
-
+# ---------- Teil 3 ----------
 elif teil.startswith("Teil 3"):
-    if frage and antwort:
-        st.success("✅ Well done! You completed this Situation.")
-        st.info("💡 Please read your **request and answer aloud** and record yourself. 📤 Send your recording to your teacher via WhatsApp.")
+    total = len(teil3_prompts)
+    done = len(st.session_state["teil3_done"])
+    st.info(f"Total situations: {total}. You have completed {done}.")
 
-        if st.button("➡ Next Situation"):
-            st.session_state["teil3_frage"] = ""
-            st.session_state["teil3_antwort"] = ""
-            st.session_state["teil3_completed"] = st.session_state.get("teil3_completed", 0) + 1
-            st.rerun()
+    remaining = [s for s in teil3_prompts if s not in st.session_state["teil3_done"]]
+
+    if not st.session_state["teil3_today"]:
+        max_today = len(remaining)
+        st.info("How many situations would you like to practice today? Minimum 5.")
+        num_today = st.number_input("Number of situations to practice today:", min_value=5, max_value=max_today if max_today >= 5 else max_today, step=1)
+
+        if st.button("🎯 Start Today’s Practice"):
+            st.session_state["teil3_today"] = random.sample(remaining, min(num_today, len(remaining)))
+            st.session_state["teil3_index"] = 0
+            st.session_state["submitted_valid"] = False
+
+    elif st.session_state["teil3_today"]:
+        index = st.session_state["teil3_index"]
+        batch = st.session_state["teil3_today"]
+
+        if index < len(batch):
+            situation = batch[index]
+            st.info(f"📝 Situation: {situation}")
+
+            st.warning("👉 Please type both your **request** and **response** in the box below. End your request with a **?** and your response with a **.**")
+
+            text = st.text_area("💬 Your request + response:", key=f"bitteantwort_{index}", placeholder="Example: Können Sie mir bitte helfen? Ja, gerne.")
+
+            if st.button("✅ Submit"):
+                feedback = []
+
+                if "?" not in text or "." not in text:
+                    feedback.append("Please use a question mark (?) and a full stop (.)")
+                    st.session_state["submitted_valid"] = False
+                else:
+                    bitte_part = text.split("?")[0].strip().lower()
+                    antwort_part = text.split("?")[1].strip().lower()
+
+                    if not any(w in bitte_part for w in ["können", "könnten", "bitte", "öffnen sie", "machen sie"]):
+                        feedback.append("Your request should include 'können', 'könnten', 'bitte' or a Sie-form imperative.")
+
+                    if not any(p in antwort_part for p in ["ja", "kein problem", "gerne", "natürlich", "viele grüße", "liebe grüße", "mit freundlichen grüßen"]):
+                        feedback.append("Your response should be polite (e.g., 'Ja, gerne').")
+
+                if feedback:
+                    for f in feedback:
+                        st.error(f)
+                    st.session_state["submitted_valid"] = False
+                else:
+                    st.success("✅ Answer saved. Click 'Next' to continue.")
+                    st.session_state["submitted_valid"] = True
+
+            if st.button("➡ Next"):
+                if st.session_state["submitted_valid"]:
+                    if situation not in st.session_state["teil3_done"]:
+                        st.session_state["teil3_done"].append(situation)
+                    st.session_state["teil3_index"] += 1
+                    st.session_state["submitted_valid"] = False
+                else:
+                    st.warning("Please submit a valid answer before continuing.")
+
+        else:
+            st.success(f"🎉 You completed {len(batch)} situations today.")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔄 Start new batch"):
+                    st.session_state["teil3_today"] = []
+                    st.session_state["teil3_index"] = 0
+            with col2:
+                if st.button("✅ Finish for today"):
+                    st.success("👏 Great work today! Stay consistent and share your progress with your tutor.")
+                    st.session_state["teil3_today"] = []
+                    st.session_state["teil3_index"] = 0
+
+    st.progress(done / total)
